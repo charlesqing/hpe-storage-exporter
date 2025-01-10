@@ -94,39 +94,48 @@ class HP3PARCollector:
         identifier = device_id or element_name or tag or serial_number
         identifier = identifier.replace('.', '_').replace('[', '_').replace(']', '_').replace('-', '_').replace(' ', '_') 
 
+        # 根据资源类型生成指标名称
+        metric_prefix = f"hpe_{cim_class[4:]}"
+
         # 添加健康状态指标
         if "HealthState" in instance and instance["HealthState"] is not None:
-            key = f"hpe_health_{cim_class[4:]}_{identifier}"
-            metrics[key] = GaugeMetricFamily(key, f'Health State of {cim_class}')
-            metrics[key].add_metric([], float(instance["HealthState"]))
+            key = f"{metric_prefix}_health"
+            if key not in metrics:
+                metrics[key] = GaugeMetricFamily(key, f'Health State of {cim_class}', labels=['tag'])
+            metrics[key].add_metric([identifier], float(instance["HealthState"]))
 
         # 添加操作状态指标
         if "OperationalStatus" in instance and instance["OperationalStatus"] and instance["OperationalStatus"][0] is not None:
-            key = f"hpe_oper_{cim_class[4:]}_{identifier}"
-            metrics[key] = GaugeMetricFamily(key, f'Operational State of {cim_class}')
-            metrics[key].add_metric([], float(instance["OperationalStatus"][0]))
+            key = f"{metric_prefix}_oper"
+            if key not in metrics:
+                metrics[key] = GaugeMetricFamily(key, f'Operational State of {cim_class}', labels=['tag'])
+            metrics[key].add_metric([identifier], float(instance["OperationalStatus"][0]))
 
         # 处理电池容量和电压
         if cim_class == 'TPD_Battery':
             if "RemainingCapacity" in instance and instance["RemainingCapacity"] is not None:
-                key = f"hpe_battery_capacity_{identifier}"
-                metrics[key] = GaugeMetricFamily(key, 'Remaining Capacity of Battery')
-                metrics[key].add_metric([], float(instance["RemainingCapacity"]))
+                key = f"{metric_prefix}_capacity"
+                if key not in metrics:
+                    metrics[key] = GaugeMetricFamily(key, 'Remaining Capacity of Battery', labels=['tag'])
+                metrics[key].add_metric([identifier], float(instance["RemainingCapacity"]))
             if "Voltage" in instance and instance["Voltage"] is not None:
-                key = f"hpe_battery_voltage_{identifier}"
-                metrics[key] = GaugeMetricFamily(key, 'Voltage of Battery')
-                metrics[key].add_metric([], float(instance["Voltage"]))
+                key = f"{metric_prefix}_voltage"
+                if key not in metrics:
+                    metrics[key] = GaugeMetricFamily(key, 'Voltage of Battery', labels=['tag'])
+                metrics[key].add_metric([identifier], float(instance["Voltage"]))
 
         # 处理系统 LED 和其他操作状态
         if cim_class == 'TPD_NodeSystem' and "SystemLED" in instance and instance["SystemLED"] is not None:
-            key = f"hpe_led_{cim_class[4:]}_{identifier}"
-            metrics[key] = GaugeMetricFamily(key, f'LED State of {cim_class}')
-            metrics[key].add_metric([], float(instance["SystemLED"]))
+            key = f"{metric_prefix}_led"
+            if key not in metrics:
+                metrics[key] = GaugeMetricFamily(key, f'LED State of {cim_class}', labels=['tag'])
+            metrics[key].add_metric([identifier], float(instance["SystemLED"]))
 
         if cim_class in ['TPD_SASPort', 'TPD_FCPort', 'TPD_EthernetPort'] and "OtherOperationalStatus" in instance and instance["OtherOperationalStatus"] is not None:
-            key = f"hpe_other_oper_{cim_class[4:]}_{identifier}"
-            metrics[key] = GaugeMetricFamily(key, f'Other Operational State of {cim_class}')
-            metrics[key].add_metric([], float(instance["OtherOperationalStatus"]))
+            key = f"{metric_prefix}_other_oper"
+            if key not in metrics:
+                metrics[key] = GaugeMetricFamily(key, f'Other Operational State of {cim_class}', labels=['tag'])
+            metrics[key].add_metric([identifier], float(instance["OtherOperationalStatus"]))
 
     def _update_overprovisioning_metrics(self, hp_connect, metrics):
         """更新超配指标"""
@@ -138,9 +147,10 @@ class HP3PARCollector:
                 stdin, stdout, stderr = ssh_client.exec_command(f'showspace -cpg {cpg_name}')
                 output = stdout.read().decode("utf-8").split("\n")[3]
                 overprv_value = float(output.split()[-1])
-                key = f"hpe_overprv_DynamicStoragePool_{cpg_name.replace('.', '_').replace(' ', '_')}"
-                metrics[key] = GaugeMetricFamily(key, f'Overprovisioning of {cpg_name}')
-                metrics[key].add_metric([], overprv_value)
+                key = "hpe_overprv"
+                if key not in metrics:
+                    metrics[key] = GaugeMetricFamily(key, 'Overprovisioning of DynamicStoragePool', labels=['tag'])
+                metrics[key].add_metric([cpg_name.replace(' ', '_')], overprv_value)
         except Exception as e:
             logger.error(f"Error updating overprovisioning metrics: {e}")
         finally:
