@@ -23,7 +23,7 @@ Ensure you have the latest version of pip installed. This can be done using the 
 
 Install the necessary Python packages using pip:
 
-`sudo pip3 install setuptools_rust wheel`
+`sudo pip3 install setuptools_rust wheel prometheus_client pywbem paramiko`
 
 ### Run Your Script
 
