@@ -102,14 +102,18 @@ class HP3PARCollector:
             key = f"{metric_prefix}_health"
             if key not in metrics:
                 metrics[key] = GaugeMetricFamily(key, f'Health State of {cim_class}', labels=['tag'])
-            metrics[key].add_metric([identifier], float(instance["HealthState"]))
+            # 检查是否已经为该标签添加过值
+            if not any(sample.labels['tag'] == identifier for sample in metrics[key].samples):
+                metrics[key].add_metric([identifier], float(instance["HealthState"]))
 
         # 添加操作状态指标
         if "OperationalStatus" in instance and instance["OperationalStatus"] and instance["OperationalStatus"][0] is not None:
             key = f"{metric_prefix}_oper"
             if key not in metrics:
                 metrics[key] = GaugeMetricFamily(key, f'Operational State of {cim_class}', labels=['tag'])
-            metrics[key].add_metric([identifier], float(instance["OperationalStatus"][0]))
+            # 检查是否已经为该标签添加过值
+            if not any(sample.labels['tag'] == identifier for sample in metrics[key].samples):
+                metrics[key].add_metric([identifier], float(instance["OperationalStatus"][0]))
 
         # 处理电池容量和电压
         if cim_class == 'TPD_Battery':
@@ -117,25 +121,29 @@ class HP3PARCollector:
                 key = f"{metric_prefix}_capacity"
                 if key not in metrics:
                     metrics[key] = GaugeMetricFamily(key, 'Remaining Capacity of Battery', labels=['tag'])
-                metrics[key].add_metric([identifier], float(instance["RemainingCapacity"]))
+                if not any(sample.labels['tag'] == identifier for sample in metrics[key].samples):
+                    metrics[key].add_metric([identifier], float(instance["RemainingCapacity"]))
             if "Voltage" in instance and instance["Voltage"] is not None:
                 key = f"{metric_prefix}_voltage"
                 if key not in metrics:
                     metrics[key] = GaugeMetricFamily(key, 'Voltage of Battery', labels=['tag'])
-                metrics[key].add_metric([identifier], float(instance["Voltage"]))
+                if not any(sample.labels['tag'] == identifier for sample in metrics[key].samples):
+                    metrics[key].add_metric([identifier], float(instance["Voltage"]))
 
         # 处理系统 LED 和其他操作状态
         if cim_class == 'TPD_NodeSystem' and "SystemLED" in instance and instance["SystemLED"] is not None:
             key = f"{metric_prefix}_led"
             if key not in metrics:
                 metrics[key] = GaugeMetricFamily(key, f'LED State of {cim_class}', labels=['tag'])
-            metrics[key].add_metric([identifier], float(instance["SystemLED"]))
+            if not any(sample.labels['tag'] == identifier for sample in metrics[key].samples):
+                metrics[key].add_metric([identifier], float(instance["SystemLED"]))
 
         if cim_class in ['TPD_SASPort', 'TPD_FCPort', 'TPD_EthernetPort'] and "OtherOperationalStatus" in instance and instance["OtherOperationalStatus"] is not None:
             key = f"{metric_prefix}_other_oper"
             if key not in metrics:
                 metrics[key] = GaugeMetricFamily(key, f'Other Operational State of {cim_class}', labels=['tag'])
-            metrics[key].add_metric([identifier], float(instance["OtherOperationalStatus"]))
+            if not any(sample.labels['tag'] == identifier for sample in metrics[key].samples):
+                metrics[key].add_metric([identifier], float(instance["OtherOperationalStatus"]))
 
     def _update_overprovisioning_metrics(self, hp_connect, metrics):
         """更新超配指标"""
@@ -150,7 +158,8 @@ class HP3PARCollector:
                 key = "hpe_overprv"
                 if key not in metrics:
                     metrics[key] = GaugeMetricFamily(key, 'Overprovisioning of DynamicStoragePool', labels=['tag'])
-                metrics[key].add_metric([cpg_name.replace(' ', '_')], overprv_value)
+                if not any(sample.labels['tag'] == cpg_name.replace(' ', '_') for sample in metrics[key].samples):
+                    metrics[key].add_metric([cpg_name.replace(' ', '_')], overprv_value)
         except Exception as e:
             logger.error(f"Error updating overprovisioning metrics: {e}")
         finally:
