@@ -25,13 +25,13 @@ Install the necessary Python packages using pip:
 
 `sudo pip3 install setuptools_rust wheel`
 
-## Run Your Script
+### Run Your Script
 
 To run the HPE Storage Exporter script, use the following command:
 
 `python3 hpe-3par-exporter.py --hp_ip 10.10.20.20 --hp_port 5989 --hp_user USERNAME --hp_password PASSWORD --storage_name HPE-Alletra-MP --port 9101`
 
-## Start Your Web
+### Start Your Web
 
 `http://IP:9101/metrics`
 
