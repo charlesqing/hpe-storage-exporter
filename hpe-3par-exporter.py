@@ -13,7 +13,7 @@ from prometheus_client.core import GaugeMetricFamily, REGISTRY
 
 # 配置日志
 logging.basicConfig(
-    filename="/tmp/hp_3par_state.log",
+    filename="/tmp/hpe_3par_state.log",
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
     level=logging.INFO,
